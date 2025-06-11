@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>SBERT Match Viewer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 960px; margin: auto; }
+    .controls { margin: 1rem 0; }
+    .entry { border: 1px solid #ccc; padding: 1rem; margin-top: 1rem; }
+    .match { margin-left: 1em; margin-top: 0.5em; }
+    .label-key { font-weight: bold; color: #222; }
+    .match-block { border-top: 1px solid #ccc; padding-top: 0.5em; margin-top: 0.5em; }
+    .source-info { margin-bottom: 1em; padding: 0.5em; background: #f8f8f8; border: 1px solid #ddd; }
+    input[type="number"] {
+      width: 60px;
+      font-size: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>SBERT Match Viewer</h1>
+
+  <label for="csv-select">比較対象:</label>
+  <select id="csv-select">
+    <option value="match_content.csv">Content</option>
+    <option value="match_content_ins.csv">Content (ins only)</option>
+    <option value="match_content_del.csv">Content (del only)</option>
+    <option value="match_justification.csv">Justification</option>
+  </select>
+
+  <label for="category-filter">カテゴリ絞り込み:</label>
+    <select id="category-filter">
+    <option value="">All</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+    <option value="6">6</option>
+    </select>
+
+
+  <div class="controls">
+    <button id="prev">← Prev</button>
+    <label>Page:
+      <input type="number" id="page-input" min="1" value="1" />
+      / <span id="total-pages">0</span>
+    </label>
+    <button id="next">Next →</button>
+  </div>
+
+  <div class="entry" id="entry"></div>
+
+<script>
+  const fileMap = {
+    "match_justification.csv": "csv/match_justification.csv",
+    "match_content.csv": "csv/match_content.csv",
+    "match_content_ins.csv": "csv/match_content_ins.csv",
+    "match_content_del.csv": "csv/match_content_del.csv"
+  };
+
+  const categoryLabels = {
+    "1": "1. てにをは、フォーマットの正規化",
+    "2": "2. 数字のアップデート",
+    "3": "3. 略語・正式名称への変換、引用・出典の補完",
+    "4": "4. 修辞の調整、語順変更や文構造整理",
+    "5": "5. その他意味に踏み込まない変更",
+    "6": "6. 意味に踏み込んだ変更"
+  };
+
+  let matchData = [];
+  let grouped = [];
+  let index = 0;
+  let sourceInfo = {};
+
+  const entry = document.getElementById("entry");
+  const pageInput = document.getElementById("page-input");
+  const totalPages = document.getElementById("total-pages");
+
+  // === diff_classified.csv を先に読み込む ===
+  Papa.parse("csv/diff_classified.csv", {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      results.data.forEach(row => {
+        sourceInfo[row.id] = row;
+      });
+      loadCsv("csv/match_justification.csv"); // 初期ファイル読み込み
+    }
+  });
+
+  function renderEntry() {
+    entry.innerHTML = "";
+    if (grouped.length === 0) return;
+
+    const group = grouped[index];
+    const changeId = group[0].change_id;
+    const source = sourceInfo[changeId];
+
+    if (source) {
+      const src = document.createElement("div");
+      src.className = "source-info";
+
+      const categoryLabel = categoryLabels[source.category] || (source.category || "(未分類)");
+
+      src.innerHTML = `
+        <div><span class="label-key">Change ID:</span> ${source.id}</div>
+        <div><span class="label-key">Content:</span></div>
+        <div>${source.content || ''}</div>
+        <div><span class="label-key">Category:</span> ${categoryLabel}</div>
+        <div><span class="label-key">Justification:</span> ${source.justification || ''}</div>
+      `;
+      // HTMLレンダリング（ins/del対応）
+      src.querySelector('div:nth-child(3)').innerHTML = source.content;
+      entry.appendChild(src);
+    }
+
+    group.forEach((row, i) => {
+      const match = document.createElement("div");
+      match.className = "match-block";
+      const link = `minutes.html#${row.matched_seg_id}`;
+      match.innerHTML = `
+        <div><span class="label-key">Match ${i + 1}</span></div>
+        <div><a href="${link}" target="_blank">${row.matched_seg_id}</a></div>
+        <div>${row.matched_seg_text}</div>
+        <div><em>Similarity: ${parseFloat(row.similarity).toFixed(4)}</em></div>
+      `;
+      entry.appendChild(match);
+    });
+
+    pageInput.value = index + 1;
+    totalPages.textContent = grouped.length;
+  }
+
+  function goToFilteredIndex(direction) {
+    if (grouped.length === 0) return;
+
+    const selectedCategory = document.getElementById("category-filter").value;
+    let i = index;
+
+    while (true) {
+        i += direction;
+        if (i < 0 || i >= grouped.length) break;
+
+        const changeId = grouped[i][0].change_id;
+        const cat = sourceInfo[changeId]?.category;
+
+        if (!selectedCategory || cat === selectedCategory) {
+        index = i;
+        renderEntry();
+        return;
+        }
+    }
+  }
+
+  function loadCsv(path) {
+    const keepIndex = index;
+    Papa.parse(path, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        matchData = results.data;
+        grouped = Object.values(
+          matchData.reduce((acc, row) => {
+            (acc[row.change_id] = acc[row.change_id] || []).push(row);
+            return acc;
+          }, {})
+        );
+        index = Math.min(keepIndex, grouped.length - 1);
+        renderEntry();
+      }
+    });
+  }
+
+  document.getElementById("csv-select").addEventListener("change", (e) => {
+    const selected = e.target.value;
+    loadCsv(fileMap[selected]);
+  });
+
+  document.getElementById("prev").addEventListener("click", () => goToFilteredIndex(-1));
+  document.getElementById("next").addEventListener("click", () => goToFilteredIndex(1));
+
+  pageInput.addEventListener("change", () => {
+    const val = parseInt(pageInput.value);
+    if (!isNaN(val)) goToFilteredIndex(val - 1);
+  });
+
+  pageInput.addEventListener("keyup", (e) => {
+    if (e.key === 'Enter') {
+      const val = parseInt(pageInput.value);
+      if (!isNaN(val)) goToFilteredIndex(val - 1);
+    }
+  });
+
+  document.getElementById("category-filter").addEventListener("change", () => {
+    goToFilteredIndex(0); // 今の位置が合致しなければ次の候補に飛ぶ
+  });
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./css/tei.css">
+  <script src="./js/CETEI-b.js"></script>
+  <script>
+    let c = new CETEI();
+    let behaviors = {
+      "tei": {
+        "head": function(e) {
+          let level = document.evaluate("count(ancestor::tei-div)", e, null, XPathResult.NUMBER_TYPE, null);
+          let result = document.createElement("h" + (level.numberValue>7 ? 7 : level.numberValue));
+          for (let n of Array.from(e.childNodes)) {
+            result.appendChild(n.cloneNode());
+          }
+          return result;
+        },
+        "lb": ["<br>"],
+        /* Insert a <p> with the content of the <pb>'s @n attribute inside it
+           Add a line above with CSS */
+        "pb": ["<p class=\"break\">$@n</p>"],
+      }
+    };
+    c.addBehaviors(behaviors);
+    c.getHTML5('./ENV_113-116.xml', function(data){
+      document.getElementsByTagName('body')[0].appendChild(data);
+      let ruby = document.querySelectorAll('tei-ruby')
+      ruby.forEach(function(e1){
+        let rbt = e1.querySelectorAll('tei-rb,tei-rt')
+        let ruby = document.createElement('ruby');
+        rbt.forEach(function(e2){
+          let rbt = document.createElement(e2.tagName.replace(/TEI-/,''));
+          rbt.textContent = e2.textContent;
+          ruby.append(rbt);
+        });
+        e1.replaceWith(ruby);
+      });
+      // ✅ ここが描画完了のラスト
+      console.log("✅ CETEIcean rendering complete");
+      document.dispatchEvent(new Event("tei-ready"));
+      // ハッシュに対応する要素をハイライト
+      const hash = location.hash?.slice(1); // "#u5seg91" → "u5seg91"
+      if (hash) {
+        const target = document.getElementById(hash);
+        if (target) {
+          target.classList.add("highlight");
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    });
+    document.addEventListener("tei-ready", () => {
+      const hash = location.hash?.slice(1); // "#u5seg91" → "u5seg91"
+      if (hash) {
+        const target = document.getElementById(hash);
+        if (target) {
+          // 小さな delay を加えるとレイアウト安定後により確実
+          setTimeout(() => {
+            target.classList.add("highlight");
+            target.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 100); // 100ms delay
+        }
+      }
+    });
+
+  </script>
+</head>
+<body>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+# macOS system files
+.DS_Store
+
+# macOS .Spotlight and .Trash
+.Spotlight-V100
+.Trashes
+
+# Vite build cache
+.vite/
+
+# Custom development folders
+box/
+
