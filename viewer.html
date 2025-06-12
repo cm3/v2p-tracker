@@ -135,25 +135,41 @@
     totalPages.textContent = grouped.length;
   }
 
-  function goToFilteredIndex(direction) {
+  function goToFilteredIndex(direction, includeCurrent = false) {
     if (grouped.length === 0) return;
 
     const selectedCategory = document.getElementById("category-filter").value;
     let i = index;
+    let steps = 0;
 
-    while (true) {
-        i += direction;
-        if (i < 0 || i >= grouped.length) break;
+    if (!includeCurrent) i += direction;
+
+    while (i >= 0 && i < grouped.length) {
+        steps++;
+
+        if (steps > grouped.length) {
+        console.error("🔁 無限ループの疑い: category に一致する項目が存在しないか、index が変化しないまま繰り返されています。");
+        alert("⚠️ このカテゴリには該当する項目がありません。");
+        return;
+        }
 
         const changeId = grouped[i][0].change_id;
         const cat = sourceInfo[changeId]?.category;
 
         if (!selectedCategory || cat === selectedCategory) {
+        if (i === index && !includeCurrent) {
+            console.warn("👀 index が変化しないまま一致したため移動をスキップしました");
+            return;
+        }
         index = i;
         renderEntry();
         return;
         }
+
+        i += direction;
     }
+
+    alert("🔍 絞り込み条件に合致する次の項目は見つかりませんでした。");
   }
 
   function loadCsv(path) {
@@ -197,7 +213,7 @@
   });
 
   document.getElementById("category-filter").addEventListener("change", () => {
-    goToFilteredIndex(0); // 今の位置が合致しなければ次の候補に飛ぶ
+    goToFilteredIndex(1, true); // 現在位置も対象にしてフィルタ内の項目を探す
   });
 
 </script>
