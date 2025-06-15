@@ -17,17 +17,37 @@
       font-size: 1rem;
       text-align: center;
     }
+    .project-title {
+      display: flex;
+      align-items: baseline;
+      gap: 0.3em;
+      font-size: 1em;
+      font-family: sans-serif;
+    }
+    .project-title h1 {
+      margin: 0;
+      font-weight: bold;
+      display: inline;
+    }
   </style>
 </head>
 <body>
-  <h1>SBERT Match Viewer</h1>
+  <div class="project-title">
+    <span>v2p-tracker.</span>
+    <h1>relationFinder</h1>
+    <span>.diff2request</span>
+  </div>
 
   <label for="csv-select">比較対象:</label>
-  <select id="csv-select">
+    <select id="csv-select">
     <option value="match_content.csv">Content</option>
     <option value="match_content_ins.csv">Content (ins only)</option>
     <option value="match_content_del.csv">Content (del only)</option>
     <option value="match_justification.csv">Justification</option>
+    <option value="match_content_115.csv">Content (115 only)</option>
+    <option value="match_content_ins_115.csv">Content (ins only, 115)</option>
+    <option value="match_content_del_115.csv">Content (del only, 115)</option>
+    <option value="match_justification_115.csv">Justification (115 only)</option>
   </select>
 
   <label for="category-filter">カテゴリ絞り込み:</label>
@@ -54,12 +74,12 @@
   <div class="entry" id="entry"></div>
 
 <script>
-  const fileMap = {
-    "match_justification.csv": "csv/match_justification.csv",
-    "match_content.csv": "csv/match_content.csv",
-    "match_content_ins.csv": "csv/match_content_ins.csv",
-    "match_content_del.csv": "csv/match_content_del.csv"
-  };
+  const csvPathPrefix = "csv/";
+
+  function loadCsvByName(fileName) {
+    const path = csvPathPrefix + fileName;
+    loadCsv(path);
+  }
 
   const categoryLabels = {
     "1": "1. てにをは、フォーマットの正規化",
@@ -194,7 +214,7 @@
 
   document.getElementById("csv-select").addEventListener("change", (e) => {
     const selected = e.target.value;
-    loadCsv(fileMap[selected]);
+    loadCsvByName(selected);
   });
 
   document.getElementById("prev").addEventListener("click", () => goToFilteredIndex(-1));

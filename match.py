@@ -7,18 +7,35 @@ import re
 model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
 # === XML読み込みと <seg>抽出（id付き）===
-def extract_segments_with_ids(xml_file):
-    ns = {'tei': 'http://www.tei-c.org/ns/1.0'}
+def extract_segments_with_ids(xml_file, meeting_id=None):
+    """
+    指定した meeting_id の中にある <seg> 要素のみ抽出。
+    例: meeting_id='meeting-115'
+    """
+    ns = {
+        'tei': 'http://www.tei-c.org/ns/1.0',
+        'xml': 'http://www.w3.org/XML/1998/namespace'
+    }
     tree = ET.parse(xml_file)
     root = tree.getroot()
-    seg_elements = root.findall('.//tei:seg', ns)
-    return [
-        {'id': seg.attrib.get('{http://www.w3.org/XML/1998/namespace}id'), 'text': seg.text.strip()}
-        for seg in seg_elements
-        if seg.text and seg.attrib.get('{http://www.w3.org/XML/1998/namespace}id')
-    ]
 
-tei_segments = extract_segments_with_ids("ENV_113-116.xml")
+    # 絞り込み対象の <seg> 要素を探す範囲
+    if meeting_id:
+        context = root.find(f".//tei:*[@xml:id='{meeting_id}']", ns)
+        if context is None:
+            raise ValueError(f"指定された meeting_id='{meeting_id}' が見つかりません")
+        seg_elements = context.findall('.//tei:seg', ns)
+    else:
+        seg_elements = root.findall('.//tei:seg', ns)
+
+    segments = []
+    for seg in seg_elements:
+        seg_id = seg.attrib.get('{http://www.w3.org/XML/1998/namespace}id')
+        if seg_id and seg.text:
+            segments.append({'id': seg_id, 'text': seg.text.strip()})
+    return segments
+
+tei_segments = extract_segments_with_ids("ENV_113-116.xml", meeting_id="meeting-115")
 tei_texts = [s['text'] for s in tei_segments]
 tei_ids = [s['id'] for s in tei_segments]
 tei_embeddings = model.encode(tei_texts, convert_to_tensor=True)
@@ -59,7 +76,7 @@ def compute_and_save_similarity(column_name, output_file):
     print(f"✅ {output_file} に保存しました")
 
 # === 各条件で実行 ===
-compute_and_save_similarity("justification", "match_justification.csv")
-compute_and_save_similarity("content", "match_content.csv")
-compute_and_save_similarity("content_ins", "match_content_ins.csv")
-compute_and_save_similarity("content_del", "match_content_del.csv")
+compute_and_save_similarity("justification", "match_justification_115.csv")
+compute_and_save_similarity("content", "match_content_115.csv")
+compute_and_save_similarity("content_ins", "match_content_ins_115.csv")
+compute_and_save_similarity("content_del", "match_content_del_115.csv")
