@@ -16,3 +16,18 @@ tei-u > tei-note {
   border-radius: 4px;
   transition: background-color 1s ease;
 }
+#fixedHeader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border-bottom: 1px solid #ccc;
+  z-index: 1000;
+  padding: 0.5em 1em;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+body {
+  padding-top: 3em; /* 固定ヘッダーの分 */
+}

@@ -1,13 +1,17 @@
 # macOS system files
 .DS_Store
-
-# macOS .Spotlight and .Trash
 .Spotlight-V100
 .Trashes
+.~lock.*
 
 # Vite build cache
 .vite/
 
 # Custom development folders
 box/
+chroma_env6plan/
 
+# Large embedding files
+env6plan_draft.jsonl
+env6plan_final_draft.jsonl
+min115_embeddings.jsonl

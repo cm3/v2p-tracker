@@ -51,22 +51,57 @@
       }
     });
     document.addEventListener("tei-ready", () => {
+      const header = document.getElementById("fixedHeader");
+
+      // 会議ブロックを全部取得
+      const meetings = Array.from(document.querySelectorAll('[xml\\:id^="meeting-"]'));
+
+      if (meetings.length === 0) return;
+
+      function updateHeader() {
+        const scrollY = window.scrollY;
+        let current = meetings[0];
+
+        for (let i = 0; i < meetings.length; i++) {
+          const top = meetings[i].getBoundingClientRect().top + window.scrollY;
+          if (scrollY >= top - 100) {
+            current = meetings[i];
+          } else {
+            break;
+          }
+        }
+
+        const id = current.getAttribute("xml:id");
+        const number = id?.match(/\d+/)?.[0];
+        if (number) {
+          header.textContent = `第${number}回 環境審議会 議事録`;
+        }
+      }
+
       const hash = location.hash?.slice(1); // "#u5seg91" → "u5seg91"
       if (hash) {
         const target = document.getElementById(hash);
         if (target) {
-          // 小さな delay を加えるとレイアウト安定後により確実
           setTimeout(() => {
+            // 高さ調整分
+            const yOffset = -80; // ← 固定ヘッダーの高さ + 少し余裕
+            const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({ top: y, behavior: "smooth" });
+
+            // ハイライトも維持
             target.classList.add("highlight");
-            target.scrollIntoView({ behavior: "smooth", block: "center" });
-          }, 100); // 100ms delay
+          }, 500);
         }
       }
+
+      // 初回 & スクロール時に更新
+      updateHeader();
+      window.addEventListener("scroll", updateHeader);
     });
 
   </script>
 </head>
 <body>
-
+<div id="fixedHeader"></div>
 </body>
 </html>
