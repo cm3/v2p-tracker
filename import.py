@@ -33,4 +33,14 @@ with open("min115_embeddings.jsonl","r",encoding="utf-8") as f:
             documents=[obj.get("text", "")]
         )
 
+col4 = client.get_or_create_collection("env6plan_min116", metadata={"hnsw:space": "cosine"})
+with open("min116_embeddings.jsonl","r",encoding="utf-8") as f:
+    for line in f:
+        obj = json.loads(line)
+        col4.add(
+            ids=[str(obj["id"])],
+            embeddings=[obj["embedding"]],
+            documents=[obj.get("text", "")]
+        )
+
 # 自動的に永続化されます

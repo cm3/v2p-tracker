@@ -7,7 +7,7 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 xml_file = "ENV_113-116.xml"
-log_file = "page_line_mentions_grouped_requests_log.txt"
+log_file = "page_line_mentions_grouped_requests_log_116.txt"
 limit = 0
 
 ns = {
@@ -17,7 +17,7 @@ ns = {
 tree = ET.parse(xml_file)
 root = tree.getroot()
 
-meeting = root.find(".//tei:*[@xml:id='meeting-115']", ns)
+meeting = root.find(".//tei:*[@xml:id='meeting-116']", ns)
 utterances = meeting.findall('.//tei:u', ns)
 
 persons = {}
@@ -78,18 +78,18 @@ with open(log_file, 'w', encoding='utf-8') as logf:
                 prompt = f"""
 以下の発言は、行政計画の文書に関する議論中の1人の委員の発言です。
 
-ここでの「要求」とは、行政計画文書の明確な変更を迫る要求のことを指します。議事進行など、行政計画文書の変更に関わらない要求については無視してください。
+ここでの「変更の言及」とは、環境基本計画の案が変更された箇所や内容についての言及のことを指します。議事進行における話題の変更や、明確に他の文書の変更など、環境基本計画の文書変更に関わらない要求については無視してください。対象の文書が不明な場合は、無視せずに含めてください。
 
-参照されたページや行があれば、その情報に加えて「見え消し版」「溶け込み版」などの版の種類も取得してください。
+参照されたページや行があれば、その情報に加えて「見え消し版」などの版の種類も取得してください。
 
-この発言に含まれる要求を、まとまり（同じ意図の要求）ごとに分けて抽出してください。
+この発言に含まれる「変更の言及」を、まとまり（同じ箇所についての言及）ごとに分けて抽出してください。
 
-それぞれの要求まとまり（または要求がなければ全体で1件）について、以下の形式でJSON配列として出力してください：
+それぞれの言及まとまり（または言及がなければ全体で1件）について、以下の形式でJSON配列として出力してください：
 
 [
   {{
-    "内容": "要求の具体的な抜粋（1文〜数文）",
-    "要求あり": "Yes または No",
+    "内容": "言及の具体的な抜粋（1文〜数文）",
+    "言及あり": "Yes または No",
     "他の委員の発言参照": "Yes または No",
     "参照されたページ・行": "例: 12ページ5行（見え消し版）, 13ページ5-6行（溶け込み版）など、あれば。なければ空欄。",
     "理由": "なぜそう判断したかの簡潔な説明"
@@ -113,7 +113,7 @@ with open(log_file, 'w', encoding='utf-8') as logf:
                 except Exception as e:
                     parsed_raw = json.dumps([{
                         "内容": chunk,
-                        "要求あり": "Error",
+                        "言及あり": "Error",
                         "他の委員の発言参照": "Error",
                         "参照されたページ・行": "",
                         "理由": str(e)

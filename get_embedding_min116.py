@@ -8,18 +8,18 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ファイルの読み込み
-csv_path = "requests_in_min115.csv"
+csv_path = "mentions_in_min116.csv"
 df = pd.read_csv(csv_path)
 
 # 内容カラムにNaNがある場合は除去
 df = df.dropna(subset=['内容'])
 
 # 出力ファイル
-output_path = "min115_embeddings.jsonl"
+output_path = "min116_embeddings.jsonl"
 
 with open(output_path, "w", encoding="utf-8") as f:
     for idx, row in df.iterrows():
-        text_id = row['min115-contents-ID']
+        text_id = row['min116-contents-ID']
         text = row['内容']
 
         try:
